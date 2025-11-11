@@ -1,12 +1,32 @@
+// src/services/springService.js
 const axios = require('axios');
-const SPRING_BASE = process.env.SPRING_API_BASE_URL || 'http://54.92.210.23:8080/api';
+const { SPRING_API_BASE_URL } = require('../config');
 
-const client = axios.create({ baseURL: SPRING_BASE, timeout: 8000 });
+if (!SPRING_API_BASE_URL) {
+    throw new Error(
+        'SPRING_API_BASE_URL no está definida. Debes establecerla en el entorno (archivo .env, Docker, AWS, etc.).'
+    );
+}
+
+// Normalizar: quitar slashes finales
+const base = SPRING_API_BASE_URL.replace(/\/+$/, '');
+
+const client = axios.create({
+    baseURL: base,
+    timeout: 8000
+});
+
+const authHeader = (token) =>
+    token
+        ? {
+            headers: { Authorization: token }
+        }
+        : {};
 
 module.exports = {
     login: (payload) => client.post('/auth/login', payload),
     registerArbitro: (payload) => client.post('/arbitros', payload),
-    getArbitroById: (id, token) => client.get(`/arbitros/${id}`, { headers: token ? { Authorization: token } : {} }),
-    getPartidosForArbitro: (id, token) => client.get(`/arbitros/${id}/partidos`, { headers: token ? { Authorization: token } : {} }),
-    getPagosForArbitro: (id, token) => client.get(`/arbitros/${id}/pagos`, { headers: token ? { Authorization: token } : {} })
+    getArbitroById: (id, token) => client.get(`/arbitros/${id}`, authHeader(token)),
+    getPartidosForArbitro: (id, token) => client.get(`/arbitros/${id}/partidos`, authHeader(token)),
+    getPagosForArbitro: (id, token) => client.get(`/arbitros/${id}/pagos`, authHeader(token))
 };
